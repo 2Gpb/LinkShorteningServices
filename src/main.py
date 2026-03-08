@@ -1,10 +1,13 @@
 from fastapi import FastAPI, Depends
 from fastapi_users import FastAPIUsers
+import uvicorn
 
 from auth.database import User
 from auth.manager import get_user_manager
 from auth.auth import auth_backend
 from auth.schemas import UserCreate, UserRead
+
+from links.router import router as links_router
 
 
 fastapi_users = FastAPIUsers[User, int](
@@ -25,3 +28,8 @@ app.include_router(
     prefix='/auth', 
     tags=['auth']
 )
+
+app.include_router(links_router)
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", reload=True, host="0.0.0.0", log_level="info")
