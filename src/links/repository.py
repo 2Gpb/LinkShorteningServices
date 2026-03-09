@@ -22,6 +22,12 @@ class LinkRepository:
         row = result.mappings().first()
         return dict(row) if row else None
 
+    async def get_by_user_id(self, user_id: int) -> list[dict]:
+        stmt = select(links).where(links.c.owner_id == user_id)
+        result = await self.session.execute(stmt)
+        rows = result.mappings().all()
+        return [dict(row) for row in rows]
+
     async def create(
         self,
         original_url: str,

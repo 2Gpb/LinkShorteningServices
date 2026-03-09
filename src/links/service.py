@@ -63,21 +63,11 @@ class LinkService:
 
         return link
 
-    async def get_original_url_for_redirect(self, short_code: str) -> str:
-        link = await self.repository.get_by_short_code(short_code)
-        if not link:
-            raise LinkNotFoundError('Link not found')
-
-        if link['expires_at'] is not None and link['expires_at'] <= datetime.now(timezone.utc):
-            await self.repository.delete_by_short_code(short_code)
-            raise LinkExpiredError('Link has expired')
-
-        await self.repository.increment_click_stats(
-            short_code=short_code,
-            last_used_at=datetime.now(timezone.utc),
-        )
-        return link['original_url']
-
+    async def get_user_links(self, user_id: int) -> list[dict]:
+        links = await self.repository.get_by_user_id(user_id)
+        return links
+        
+    
     async def update_link(self, short_code: str, data: LinkUpdate, user_id: int) -> dict:
         link = await self.repository.get_by_short_code(short_code)
         if not link:
@@ -106,3 +96,19 @@ class LinkService:
         deleted = await self.repository.delete_by_short_code(short_code)
         if not deleted:
             raise LinkNotFoundError('Link not found')
+
+    
+    async def get_original_url_for_redirect(self, short_code: str) -> str:
+        link = await self.repository.get_by_short_code(short_code)
+        if not link:
+            raise LinkNotFoundError('Link not found')
+
+        if link['expires_at'] is not None and link['expires_at'] <= datetime.now(timezone.utc):
+            await self.repository.delete_by_short_code(short_code)
+            raise LinkExpiredError('Link has expired')
+
+        await self.repository.increment_click_stats(
+            short_code=short_code,
+            last_used_at=datetime.now(timezone.utc),
+        )
+        return link['original_url']

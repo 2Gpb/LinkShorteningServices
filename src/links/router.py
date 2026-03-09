@@ -47,7 +47,7 @@ async def search_link_by_original_url(
         return await service.search_by_original_url(original_url)
     except LinkNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
-
+    
 
 @router.get('/{short_code}/stats', response_model=LinkStatsResponse)
 async def get_link_stats(
@@ -58,6 +58,14 @@ async def get_link_stats(
         return await service.get_stats(short_code)
     except LinkNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get('/my', response_model=list[LinkResponse])
+async def get_my_links(
+    service: LinkService = Depends(get_link_service),
+    user: User | None = Depends(optional_current_user),
+):
+    return await service.get_user_links(user.id)
 
 
 @router.delete('/{short_code}', status_code=status.HTTP_204_NO_CONTENT)
