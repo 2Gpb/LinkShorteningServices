@@ -4,6 +4,7 @@ from sqlalchemy import delete, insert, select, update, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.tables import links
+from models.tables import expired_links
 
 
 class LinkRepository:
@@ -104,6 +105,33 @@ class LinkRepository:
                 links.c.owner_id == user_id,
                 inactive_condition,
             )
+        )
+        result = await self.session.execute(stmt)
+        rows = result.mappings().all()
+        return [dict(row) for row in rows]
+
+    async def save_expired_link(self, link: dict, expired_at: datetime) -> None:
+        stmt = (
+            insert(expired_links)
+            .values(
+                original_url=link["original_url"],
+                short_code=link["short_code"],
+                created_at=link["created_at"],
+                expires_at=link["expires_at"],
+                owner_id=link["owner_id"],
+                click_count=link["click_count"],
+                last_used_at=link["last_used_at"],
+                expired_at=expired_at,
+            )
+        )
+        await self.session.execute(stmt)
+        await self.session.commit()
+    
+    async def get_expired_links(self, user_id: int) -> list[dict]:
+        stmt = (
+            select(expired_links)
+            .where(expired_links.c.owner_id == user_id)
+            .order_by(expired_links.c.expired_at.desc())
         )
         result = await self.session.execute(stmt)
         rows = result.mappings().all()

@@ -25,5 +25,6 @@ class ShortCodeGenerationError(LinkError):
 class InvalidExpiresAtError(LinkError):
     pass
 
+
 class InvalidLimitError(LinkError):
     pass

@@ -42,3 +42,17 @@ class AliasCheckResponse(BaseModel):
 
 class CleanUpLinksResponse(BaseModel):
     deleted_count: int
+
+class ExpiredLinkResponse(BaseModel):
+    id: int
+    original_url: HttpUrl
+    short_code: str
+    created_at: datetime
+    expires_at: datetime | None = None
+    click_count: int
+    last_used_at: datetime | None = None
+    owner_id: int | None = None
+    expired_at: datetime
+
+    class Config:
+        from_attributes = True

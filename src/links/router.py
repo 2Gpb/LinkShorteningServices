@@ -5,14 +5,22 @@ from auth.auth import current_user, optional_current_user
 from auth.models import User
 from .dependencies import get_link_service
 from .service import LinkService
-from .schemas import LinkCreate, LinkResponse, LinkStatsResponse, LinkUpdate, AliasCheckResponse, CleanUpLinksResponse
+from .schemas import (
+    LinkCreate, 
+    LinkResponse, 
+    LinkStatsResponse, 
+    LinkUpdate, 
+    AliasCheckResponse, 
+    CleanUpLinksResponse,
+    ExpiredLinkResponse,
+)
 from .exception import (
     LinkNotFoundError, 
     ShortCodeAlreadyExistsError, 
     ShortCodeGenerationError, 
     InvalidExpiresAtError, 
     AccessDeniedError,
-    InvalidLimitError
+    InvalidLimitError,
 )
 
 
@@ -88,6 +96,14 @@ async def check_alias(
 ):
     available = await service.check_alias(alias)
     return AliasCheckResponse(alias=alias, available=available)
+
+
+@router.get('/expired', response_model=list[ExpiredLinkResponse])
+async def get_expired_links(
+    service: LinkService = Depends(get_link_service),
+    user: User = Depends(current_user),
+):
+    return await service.get_expired_links(user.id)
 
 
 @router.delete('/inactive', response_model=CleanUpLinksResponse)

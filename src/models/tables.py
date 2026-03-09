@@ -41,3 +41,21 @@ links = Table(
 
     Column("owner_id", Integer, ForeignKey("user.id"), nullable=True),
 )
+
+expired_links = Table(
+    "expired_links",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("original_url", String, nullable=False, index=True),
+    Column("short_code", String, nullable=False, index=True),
+
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("expires_at", DateTime(timezone=True), nullable=True),
+
+    Column("click_count", Integer, nullable=False, server_default=text("0")),
+    Column("last_used_at", DateTime(timezone=True), nullable=True),
+
+    Column("owner_id", Integer, ForeignKey("user.id"), nullable=True),
+
+    Column("expired_at", DateTime(timezone=True), nullable=False),
+)
