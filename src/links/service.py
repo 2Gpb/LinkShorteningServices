@@ -3,6 +3,7 @@ import string
 from datetime import datetime, timezone, timedelta
 
 from config import INACTIVE_LINK_DAYS
+from .cache_service import LinkCacheService
 from .repository import LinkRepository
 from .schemas import LinkCreate, LinkUpdate
 from .exception import (
@@ -17,8 +18,9 @@ from .exception import (
 
 
 class LinkService:
-    def __init__(self, repository: LinkRepository):
+    def __init__(self, repository: LinkRepository, link_cache_service: LinkCacheService):
         self.repository = repository
+        self.cache_service = link_cache_service
 
     def _generate_short_code(self, length: int = 6) -> str:
         alphabet = string.ascii_letters + string.digits
@@ -66,16 +68,13 @@ class LinkService:
         return link
 
     async def get_user_links(self, user_id: int) -> list[dict]:
-        links = await self.repository.get_by_user_id(user_id)
-        return links
+        return await self.repository.get_by_user_id(user_id)
         
     async def get_top_links(self, num: int) -> list[dict]:
-        links = await self.repository.get_top_links(num)
-
         if num <= 0 or num > 100:
             raise InvalidLimitError('Limit must be between 1 and 100')
 
-        return links
+        return await self.repository.get_top_links(num)
 
     async def check_alias(self, short_code: str) -> bool:
         link = await self.repository.get_by_short_code(short_code)
@@ -93,8 +92,11 @@ class LinkService:
             short_code=short_code,
             new_original_url=str(data.original_url),
         )
+
         if not updated:
             raise LinkNotFoundError('Link not found')
+
+        await self.cache_service.delete_redirect_url(short_code)
 
         return updated
 
@@ -107,24 +109,52 @@ class LinkService:
             raise AccessDeniedError('You cannot delete this link')
 
         deleted = await self.repository.delete_by_short_code(short_code)
+
         if not deleted:
             raise LinkNotFoundError('Link not found')
+
+        await self.cache_service.delete_redirect_url(short_code)
     
     async def delete_inactive_links(self, user_id: int) -> int:
         cutoff = datetime.now(timezone.utc) - timedelta(days=INACTIVE_LINK_DAYS)
-        return await self.repository.delete_inactive_links(cutoff, user_id)
-    
+
+        inactive_links = await self.repository.get_inactive_links(cutoff, user_id)
+        if not inactive_links:
+            return 0
+
+        deleted_count = await self.repository.delete_inactive_links(cutoff, user_id)
+
+        for link in inactive_links:
+            await self.cache_service.delete_redirect_url(link["short_code"])
+
+        return deleted_count
+        
     async def get_original_url_for_redirect(self, short_code: str) -> str:
+        cached_url = await self.cache_service.get_redirect_url(short_code)
+        if cached_url is not None:
+            await self.repository.increment_click_stats(
+                short_code=short_code,
+                last_used_at=datetime.now(timezone.utc),
+            )
+            return cached_url
+
         link = await self.repository.get_by_short_code(short_code)
         if not link:
             raise LinkNotFoundError('Link not found')
 
         if link['expires_at'] is not None and link['expires_at'] <= datetime.now(timezone.utc):
             await self.repository.delete_by_short_code(short_code)
+            await self.cache_service.delete_redirect_url(short_code)
             raise LinkExpiredError('Link has expired')
 
         await self.repository.increment_click_stats(
             short_code=short_code,
             last_used_at=datetime.now(timezone.utc),
         )
+
+        await self.cache_service.set_redirect_url(
+            short_code=short_code,
+            original_url=link['original_url'],
+        )
+
         return link['original_url']

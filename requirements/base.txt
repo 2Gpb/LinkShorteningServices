@@ -5,3 +5,4 @@ uvicorn
 fastapi-users[sqlalchemy]
 asyncpg
 psycopg2-binary
+fastapi-cache2[redis]

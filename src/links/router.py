@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, status, Query, Response
+from fastapi_cache.decorator import cache
 
 from auth.auth import current_user, optional_current_user
 from auth.models import User
@@ -63,12 +64,13 @@ async def get_link_stats(
 @router.get('/my', response_model=list[LinkResponse])
 async def get_my_links(
     service: LinkService = Depends(get_link_service),
-    user: User | None = Depends(optional_current_user),
+    user: User = Depends(current_user),
 ):
     return await service.get_user_links(user.id)
 
 
 @router.get('/top', response_model=list[LinkStatsResponse])
+@cache(expire=60)
 async def get_top_links_by_clicks(
     service: LinkService = Depends(get_link_service),
     num: int = 10,
@@ -87,6 +89,7 @@ async def check_alias(
     available = await service.check_alias(alias)
     return AliasCheckResponse(alias=alias, available=available)
 
+
 @router.delete('/inactive', response_model=CleanUpLinksResponse)
 async def delete_inactive_links(
     service: LinkService = Depends(get_link_service),
@@ -94,6 +97,7 @@ async def delete_inactive_links(
 ):
     num = await service.delete_inactive_links(user.id)
     return CleanUpLinksResponse(deleted_count=num)
+
 
 @router.delete('/{short_code}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_link(
@@ -108,6 +112,7 @@ async def delete_link(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except AccessDeniedError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+
 
 @router.put('/{short_code}', response_model=LinkResponse)
 async def update_link(
