@@ -33,3 +33,8 @@ class LinkStatsResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class AliasCheckResponse(BaseModel):
+    alias: str
+    available: bool

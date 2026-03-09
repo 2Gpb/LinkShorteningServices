@@ -9,8 +9,8 @@ from links.redirect_router import router as redirect_router
 app = FastAPI()
 
 app.include_router(auth_router)
-app.include_router(redirect_router)
 app.include_router(links_router)
+app.include_router(redirect_router)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ import string
 from datetime import datetime, timezone
 
 from .repository import LinkRepository
-from .schemas import LinkCreate, LinkUpdate
+from .schemas import LinkCreate, LinkUpdate, AliasCheckResponse
 from .exception import (
     LinkNotFoundError, 
     ShortCodeAlreadyExistsError, 
@@ -75,6 +75,10 @@ class LinkService:
             raise InvalidLimitError('Limit must be between 1 and 100')
 
         return links
+
+    async def check_alias(self, short_code: str) -> bool:
+        link = await self.repository.get_by_short_code(short_code)
+        return link is None
 
     async def update_link(self, short_code: str, data: LinkUpdate, user_id: int) -> dict:
         link = await self.repository.get_by_short_code(short_code)

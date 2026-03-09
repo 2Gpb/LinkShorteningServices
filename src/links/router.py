@@ -4,7 +4,7 @@ from auth.auth import current_user, optional_current_user
 from auth.models import User
 from .dependencies import get_link_service
 from .service import LinkService
-from .schemas import LinkCreate, LinkResponse, LinkStatsResponse, LinkUpdate
+from .schemas import LinkCreate, LinkResponse, LinkStatsResponse, LinkUpdate, AliasCheckResponse
 from .exception import (
     LinkNotFoundError, 
     ShortCodeAlreadyExistsError, 
@@ -71,12 +71,21 @@ async def get_my_links(
 @router.get('/top', response_model=list[LinkStatsResponse])
 async def get_top_links_by_clicks(
     service: LinkService = Depends(get_link_service),
-    num: int = 10
+    num: int = 10,
 ):
     try:
         return await service.get_top_links(num)
     except InvalidLimitError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get("/check-alias/{alias}", response_model=AliasCheckResponse)
+async def check_alias(
+    alias: str,
+    service: LinkService = Depends(get_link_service),
+):
+    available = await service.check_alias(alias)
+    return AliasCheckResponse(alias=alias, available=available)
 
 
 @router.delete('/{short_code}', status_code=status.HTTP_204_NO_CONTENT)
