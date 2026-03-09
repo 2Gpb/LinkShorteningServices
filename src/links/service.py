@@ -117,20 +117,6 @@ class LinkService:
             raise LinkNotFoundError('Link not found')
 
         await self.cache_service.delete_redirect_url(short_code)
- 
-    async def delete_inactive_links(self, user_id: int) -> int:
-        cutoff = datetime.now(timezone.utc) - timedelta(days=INACTIVE_LINK_DAYS)
-
-        inactive_links = await self.repository.get_inactive_links(cutoff, user_id)
-        if not inactive_links:
-            return 0
-
-        deleted_count = await self.repository.delete_inactive_links(cutoff, user_id)
-
-        for link in inactive_links:
-            await self.cache_service.delete_redirect_url(link["short_code"])
-
-        return deleted_count
 
     async def get_original_url_for_redirect(self, short_code: str) -> str:
         time_now = datetime.now(timezone.utc)

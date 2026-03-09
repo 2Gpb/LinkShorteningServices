@@ -40,9 +40,6 @@ class AliasCheckResponse(BaseModel):
     available: bool
 
 
-class CleanUpLinksResponse(BaseModel):
-    deleted_count: int
-
 class ExpiredLinkResponse(BaseModel):
     id: int
     original_url: HttpUrl

@@ -11,7 +11,6 @@ from .schemas import (
     LinkStatsResponse, 
     LinkUpdate, 
     AliasCheckResponse, 
-    CleanUpLinksResponse,
     ExpiredLinkResponse,
 )
 from .exception import (
@@ -104,15 +103,6 @@ async def get_expired_links(
     user: User = Depends(current_user),
 ):
     return await service.get_expired_links(user.id)
-
-
-@router.delete('/inactive', response_model=CleanUpLinksResponse)
-async def delete_inactive_links(
-    service: LinkService = Depends(get_link_service),
-    user: User = Depends(current_user),
-):
-    num = await service.delete_inactive_links(user.id)
-    return CleanUpLinksResponse(deleted_count=num)
 
 
 @router.delete('/{short_code}', status_code=status.HTTP_204_NO_CONTENT)

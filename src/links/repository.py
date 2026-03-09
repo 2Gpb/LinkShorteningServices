@@ -91,25 +91,6 @@ class LinkRepository:
         await self.session.commit()
         return result.rowcount > 0
 
-    async def get_inactive_links(self, cutoff: datetime, user_id: int) -> list[dict]:
-        inactive_condition = or_(
-            links.c.last_used_at < cutoff,
-            and_(
-                links.c.last_used_at.is_(None),
-                links.c.created_at < cutoff,
-            ),
-        )
-
-        stmt = select(links).where(
-            and_(
-                links.c.owner_id == user_id,
-                inactive_condition,
-            )
-        )
-        result = await self.session.execute(stmt)
-        rows = result.mappings().all()
-        return [dict(row) for row in rows]
-
     async def save_expired_link(self, link: dict, expired_at: datetime) -> None:
         stmt = (
             insert(expired_links)
@@ -136,21 +117,3 @@ class LinkRepository:
         result = await self.session.execute(stmt)
         rows = result.mappings().all()
         return [dict(row) for row in rows]
-
-    async def delete_inactive_links(self, cutoff: datetime, user_id: int) -> int:
-        inactive_condition = or_(
-            links.c.last_used_at < cutoff,
-            and_(
-                links.c.last_used_at.is_(None),
-                links.c.created_at < cutoff,
-            ),
-        )
-        stmt = delete(links).where(
-            and_(
-                links.c.owner_id == user_id,
-                inactive_condition
-            )
-        )
-        result = await self.session.execute(stmt)
-        await self.session.commit()
-        return result.rowcount
