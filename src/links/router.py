@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, Depends, status, Query, Response
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.auth import current_user, optional_current_user
 from auth.models import User
@@ -11,7 +10,8 @@ from .exception import (
     ShortCodeAlreadyExistsError, 
     ShortCodeGenerationError, 
     InvalidExpiresAtError, 
-    AccessDeniedError
+    AccessDeniedError,
+    InvalidLimitError
 )
 
 
@@ -31,11 +31,11 @@ async def create_short_link(
         owner_id = user.id if user else None
         return await service.create_link(data, owner_id=owner_id)
     except ShortCodeAlreadyExistsError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except InvalidExpiresAtError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except ShortCodeGenerationError as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.get('/search', response_model=LinkResponse)
@@ -46,7 +46,7 @@ async def search_link_by_original_url(
     try:
         return await service.search_by_original_url(original_url)
     except LinkNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     
 
 @router.get('/{short_code}/stats', response_model=LinkStatsResponse)
@@ -57,7 +57,7 @@ async def get_link_stats(
     try:
         return await service.get_stats(short_code)
     except LinkNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.get('/my', response_model=list[LinkResponse])
@@ -66,6 +66,17 @@ async def get_my_links(
     user: User | None = Depends(optional_current_user),
 ):
     return await service.get_user_links(user.id)
+
+
+@router.get('/top', response_model=list[LinkStatsResponse])
+async def get_top_links_by_clicks(
+    service: LinkService = Depends(get_link_service),
+    num: int = 10
+):
+    try:
+        return await service.get_top_links(num)
+    except InvalidLimitError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.delete('/{short_code}', status_code=status.HTTP_204_NO_CONTENT)
@@ -78,9 +89,9 @@ async def delete_link(
         await service.delete_link(short_code, user.id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     except LinkNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except AccessDeniedError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
 
 @router.put('/{short_code}', response_model=LinkResponse)
@@ -93,6 +104,6 @@ async def update_link(
     try:
         return await service.update_link(short_code, data, user.id)
     except LinkNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except AccessDeniedError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))

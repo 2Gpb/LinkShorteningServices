@@ -10,7 +10,8 @@ from .exception import (
     ShortCodeGenerationError, 
     InvalidExpiresAtError, 
     LinkExpiredError, 
-    AccessDeniedError
+    AccessDeniedError,
+    InvalidLimitError
 )
 
 
@@ -67,7 +68,14 @@ class LinkService:
         links = await self.repository.get_by_user_id(user_id)
         return links
         
-    
+    async def get_top_links(self, num: int) -> list[dict]:
+        links = await self.repository.get_top_links(num)
+
+        if num <= 0 or num > 100:
+            raise InvalidLimitError('Limit must be between 1 and 100')
+
+        return links
+
     async def update_link(self, short_code: str, data: LinkUpdate, user_id: int) -> dict:
         link = await self.repository.get_by_short_code(short_code)
         if not link:

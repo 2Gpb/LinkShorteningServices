@@ -28,6 +28,12 @@ class LinkRepository:
         rows = result.mappings().all()
         return [dict(row) for row in rows]
 
+    async def get_top_links(self, num: int) -> list[dict]:
+        stmt = select(links).order_by(links.c.click_count.desc()).limit(num)
+        result = await self.session.execute(stmt)
+        rows = result.mappings().all()
+        return [dict(row) for row in rows]
+
     async def create(
         self,
         original_url: str,
