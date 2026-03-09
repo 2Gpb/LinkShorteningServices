@@ -3,6 +3,7 @@ from fastapi_users.authentication import JWTStrategy, AuthenticationBackend
 
 from config import SECRET
 
+
 def get_jwt_stratagy() -> JWTStrategy:
     return JWTStrategy(secret=SECRET, lifetime_seconds=3600)
 

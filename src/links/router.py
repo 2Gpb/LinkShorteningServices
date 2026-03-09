@@ -17,14 +17,10 @@ async def search_link_by_original_url(original_url: str):
 async def get_link_stats(short_code: str):
     pass
 
-@router.get('/{short_code}')
-async def redirect_to_original(short_code: str):
+@router.put('/{short_code}')
+async def update_link(short_code: str):
     pass
 
 @router.delete('/{short_code}')
 async def delete_link(short_code: str):
-    pass
-
-@router.put('/{short_code}')
-async def update_link(short_code: str):
     pass
