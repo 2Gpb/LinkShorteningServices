@@ -38,3 +38,7 @@ class LinkStatsResponse(BaseModel):
 class AliasCheckResponse(BaseModel):
     alias: str
     available: bool
+
+
+class CleanUpLinksResponse(BaseModel):
+    deleted_count: int

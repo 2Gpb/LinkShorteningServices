@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import delete, insert, select, update
+from sqlalchemy import delete, insert, select, update, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.tables import links
@@ -89,3 +89,21 @@ class LinkRepository:
         result = await self.session.execute(stmt)
         await self.session.commit()
         return result.rowcount > 0
+
+    async def delete_inactive_links(self, cutoff: datetime, user_id: int) -> int:
+        inactive_condition = or_(
+            links.c.last_used_at < cutoff,
+            and_(
+                links.c.last_used_at.is_(None),
+                links.c.created_at < cutoff,
+            ),
+        )
+        stmt = delete(links).where(
+            and_(
+                links.c.owner_id == user_id,
+                inactive_condition
+            )
+        )
+        result = await self.session.execute(stmt)
+        await self.session.commit()
+        return result.rowcount

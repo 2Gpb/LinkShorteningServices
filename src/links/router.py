@@ -4,7 +4,7 @@ from auth.auth import current_user, optional_current_user
 from auth.models import User
 from .dependencies import get_link_service
 from .service import LinkService
-from .schemas import LinkCreate, LinkResponse, LinkStatsResponse, LinkUpdate, AliasCheckResponse
+from .schemas import LinkCreate, LinkResponse, LinkStatsResponse, LinkUpdate, AliasCheckResponse, CleanUpLinksResponse
 from .exception import (
     LinkNotFoundError, 
     ShortCodeAlreadyExistsError, 
@@ -87,6 +87,13 @@ async def check_alias(
     available = await service.check_alias(alias)
     return AliasCheckResponse(alias=alias, available=available)
 
+@router.delete('/inactive', response_model=CleanUpLinksResponse)
+async def delete_inactive_links(
+    service: LinkService = Depends(get_link_service),
+    user: User = Depends(current_user),
+):
+    num = await service.delete_inactive_links(user.id)
+    return CleanUpLinksResponse(deleted_count=num)
 
 @router.delete('/{short_code}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_link(
@@ -101,7 +108,6 @@ async def delete_link(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except AccessDeniedError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
-
 
 @router.put('/{short_code}', response_model=LinkResponse)
 async def update_link(

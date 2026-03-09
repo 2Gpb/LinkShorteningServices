@@ -1,9 +1,10 @@
 import secrets
 import string
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
+from config import INACTIVE_LINK_DAYS
 from .repository import LinkRepository
-from .schemas import LinkCreate, LinkUpdate, AliasCheckResponse
+from .schemas import LinkCreate, LinkUpdate
 from .exception import (
     LinkNotFoundError, 
     ShortCodeAlreadyExistsError, 
@@ -108,7 +109,10 @@ class LinkService:
         deleted = await self.repository.delete_by_short_code(short_code)
         if not deleted:
             raise LinkNotFoundError('Link not found')
-
+    
+    async def delete_inactive_links(self, user_id: int) -> int:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=INACTIVE_LINK_DAYS)
+        return await self.repository.delete_inactive_links(cutoff, user_id)
     
     async def get_original_url_for_redirect(self, short_code: str) -> str:
         link = await self.repository.get_by_short_code(short_code)
