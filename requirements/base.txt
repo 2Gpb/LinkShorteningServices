@@ -13,3 +13,4 @@ coverage
 httpx
 aiosqlite
 fakeredis
+locust
