@@ -10,6 +10,19 @@ jobs:
   tests:
     runs-on: ubuntu-latest
 
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: test
+      DB_USER: test
+      DB_PASS: test
+
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+
+      SECRET: testsecret
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,3 +44,7 @@ jobs:
       - name: Show coverage
         run: |
           python -m coverage report
+      
+      - name: Generate coverage HTML
+        run: |
+          python -m coverage html
