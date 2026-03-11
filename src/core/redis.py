@@ -15,7 +15,8 @@ redis_client = None
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     global redis_client
-    redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
+    # redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
+    redis_client = aioredis.from_url(REDIS_URL)
     FastAPICache.init(RedisBackend(redis_client), prefix="fastapi-cache")
     yield
     await redis_client.close()

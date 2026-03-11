@@ -6,3 +6,11 @@ fastapi-users[sqlalchemy]
 asyncpg
 psycopg2-binary
 fastapi-cache2[redis]
+pytest 
+pytest-asyncio 
+pytest-mock
+coverage
+httpx
+aiosqlite
+fakeredis
+locust
